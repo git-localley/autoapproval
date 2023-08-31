@@ -90,12 +90,13 @@ module.exports = (app: Probot) => {
     if (config.required_labels_mode === 'one_of') {
         const appliedRequiredLabels = config.required_labels
             .filter((requiredLabel: any) => prLabels.includes(requiredLabel));
+        requiredLabelsSatisfied = appliedRequiredLabels.length > 0;
         triggeringLabel = appliedRequiredLabels.length > 0 ? appliedRequiredLabels[0] : null;
     } else {
         const missingRequiredLabels = config.required_labels
             .filter((requiredLabel: any) => !prLabels.includes(requiredLabel));
         requiredLabelsSatisfied = missingRequiredLabels.length === 0;
-        if (requiredLabelsSatisfied) triggeringLabel = prLabels.find((label: string) => config.required_labels.includes(label)) || null;
+        triggeringLabel = prLabels.find((label: string) => config.required_labels.includes(label)) || null;
     }
 
     if (requiredLabelsSatisfied && ownerSatisfied) {
