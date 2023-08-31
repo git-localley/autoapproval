@@ -3,8 +3,11 @@ import { PullRequestEvent, PullRequestReviewEvent } from '@octokit/webhooks-type
 import { request } from 'https';
 import { URL } from 'url';
 
-async function sendToSlack(webhookUrl: string, prUrl: string, action: string) {
-    const text = `A pull request has been ${action}: ${prUrl}`;
+async function sendToSlack(webhookUrl: string, prTitle: string, prUrl: string, action: string, labelName: string, whoLabeled: string) {
+  const text = `A pull request has been ${action}: ${prTitle}
+- ${prUrl}
+- reason: ${labelName}
+- ${whoLabeled}: Please provide the reason why in this thread`;
 
     const url = new URL(webhookUrl);
     const data = JSON.stringify({
@@ -82,20 +85,22 @@ module.exports = (app: Probot) => {
 
     // reading pull request labels and check them with configuration
     let requiredLabelsSatisfied
+    let triggeringLabel: string | null = null;
+
     if (config.required_labels_mode === 'one_of') {
-      // one of the required_labels needs to be applied
-      const appliedRequiredLabels = config.required_labels
-        .filter((requiredLabel: any) => prLabels.includes(requiredLabel))
-      requiredLabelsSatisfied = appliedRequiredLabels.length > 0
+        const appliedRequiredLabels = config.required_labels
+            .filter((requiredLabel: any) => prLabels.includes(requiredLabel));
+        triggeringLabel = appliedRequiredLabels.length > 0 ? appliedRequiredLabels[0] : null;
     } else {
-      // all of the required_labels need to be applied
-      const missingRequiredLabels = config.required_labels
-        .filter((requiredLabel: any) => !prLabels.includes(requiredLabel))
-      requiredLabelsSatisfied = missingRequiredLabels.length === 0
+        const missingRequiredLabels = config.required_labels
+            .filter((requiredLabel: any) => !prLabels.includes(requiredLabel));
+        requiredLabelsSatisfied = missingRequiredLabels.length === 0;
+        if (requiredLabelsSatisfied) triggeringLabel = prLabels.find((label: string) => config.required_labels.includes(label)) || null;
     }
 
     if (requiredLabelsSatisfied && ownerSatisfied) {
       const reviews = await getAutoapprovalReviews(context)
+      const whoLabeled = context.payload.sender?.login || 'unknown'; // the person who triggered the event or 'unknown' as a fallback
 
       if (reviews.length > 0) {
         context.log('PR has already reviews')
@@ -104,14 +109,14 @@ module.exports = (app: Probot) => {
           approvePullRequest(context)
           applyLabels(context, config.apply_labels as string[])
           context.log('Review was dismissed, approve again')
-          await sendToSlack(process.env.SLACK_WEBHOOK_URL!, pr.html_url, 're-approved'); 
+          await sendToSlack(process.env.SLACK_WEBHOOK_URL!, pr.title, pr.html_url, 're-approved', triggeringLabel!, whoLabeled);
         }
       } else {
         await applyAutoMerge(context, prLabels, config.auto_merge_labels, config.auto_rebase_merge_labels, config.auto_squash_merge_labels)
         approvePullRequest(context)
         applyLabels(context, config.apply_labels as string[])
         context.log('PR approved first time')
-        await sendToSlack(process.env.SLACK_WEBHOOK_URL!, pr.html_url, 'approved'); 
+        await sendToSlack(process.env.SLACK_WEBHOOK_URL!, pr.title, pr.html_url, 'approved', triggeringLabel!, whoLabeled);
       }
     } else {
       // one of the checks failed

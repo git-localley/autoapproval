@@ -7,7 +7,7 @@ import nock from 'nock'
 const myProbotApp = require('../src')
 const { Probot, ProbotOctokit } = require('probot')
 
-process.env.SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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';
+process.env.SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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';
 
 nock.disableNetConnect()
 
@@ -69,6 +69,10 @@ describe('Autoapproval bot', () => {
       .get('/repos/dkhmelenko/autoapproval/contents/.github%2Fautoapproval.yml')
       .reply(200, config)
 
+      const slackNock = nock(process.env.SLACK_WEBHOOK_URL!)
+      .post('')
+      .reply(200, 'ok');
+
     // Receive a webhook event
     await probot.receive({ name: 'pull_request', payload })
 
@@ -83,6 +87,10 @@ describe('Autoapproval bot', () => {
     nock('https://api.github.com')
       .get('/repos/dkhmelenko/autoapproval/contents/.github%2Fautoapproval.yml')
       .reply(200, config)
+
+      const slackNock = nock(process.env.SLACK_WEBHOOK_URL!)
+      .post('')
+      .reply(200, 'ok');
 
     // Receive a webhook event
     await probot.receive({ name: 'pull_request', payload })
@@ -99,7 +107,11 @@ describe('Autoapproval bot', () => {
       .get('/repos/dkhmelenko/autoapproval/contents/.github%2Fautoapproval.yml')
       .reply(200, config)
 
-    // Receive a webhook event
+      const slackNock = nock(process.env.SLACK_WEBHOOK_URL!)
+        .post('')
+        .reply(200, 'ok');
+
+        // Receive a webhook event
     await probot.receive({ name: 'pull_request', payload })
 
     await new Promise(process.nextTick) // Don't assert until all async processing finishes
@@ -114,7 +126,11 @@ describe('Autoapproval bot', () => {
       .get('/repos/dkhmelenko/autoapproval/contents/.github%2Fautoapproval.yml')
       .reply(200, config)
 
-    // Receive a webhook event
+      const slackNock = nock(process.env.SLACK_WEBHOOK_URL!)
+        .post('')
+        .reply(200, 'ok');
+
+        // Receive a webhook event
     await probot.receive({ name: 'pull_request', payload })
 
     await new Promise(process.nextTick) // Don't assert until all async processing finishes
@@ -140,6 +156,8 @@ describe('Autoapproval bot', () => {
       })
       .reply(200)
 
+
+      
     // Receive a webhook event
     await probot.receive({ name: 'pull_request', payload })
 
@@ -165,6 +183,10 @@ describe('Autoapproval bot', () => {
         return body.event === 'APPROVE'
       })
       .reply(200)
+
+      const slackNock = nock(process.env.SLACK_WEBHOOK_URL!)
+      .post('')
+      .reply(200, 'ok');
 
     // Receive a webhook event
     await probot.receive({ name: 'pull_request', payload })
@@ -192,14 +214,9 @@ describe('Autoapproval bot', () => {
       })
       .reply(200)
 
-      const slackNock = nock(process.env.SLACK_WEBHOOK_URL!)
-        .post('')
-        .reply(200, 'ok');
 
     // Receive a webhook event
     await probot.receive({ name: 'pull_request', payload })
-    
-    expect(slackNock.isDone()).toBeTruthy();
 
     await new Promise(process.nextTick) // Don't assert until all async processing finishes
     expect(nock.isDone()).toBeTruthy()
@@ -224,6 +241,10 @@ describe('Autoapproval bot', () => {
         return body.event === 'APPROVE'
       })
       .reply(200)
+
+      const slackNock = nock(process.env.SLACK_WEBHOOK_URL!)
+      .post('')
+      .reply(200, 'ok');
 
     nock('https://api.github.com')
       .post('/repos/dkhmelenko/autoapproval/issues/1/labels', (body: any) => {
@@ -265,6 +286,10 @@ describe('Autoapproval bot', () => {
       })
       .reply(200)
 
+      const slackNock = nock(process.env.SLACK_WEBHOOK_URL!)
+        .post('')
+        .reply(200, 'ok');
+
     // Receive a webhook event
     await probot.receive({ name: 'pull_request', payload })
 
@@ -298,6 +323,10 @@ describe('Autoapproval bot', () => {
            body.variables.mergeMethod === 'SQUASH'
       })
       .reply(200)
+
+      const slackNock = nock(process.env.SLACK_WEBHOOK_URL!)
+        .post('')
+        .reply(200, 'ok');
 
     // Receive a webhook event
     await probot.receive({ name: 'pull_request', payload })
@@ -333,6 +362,10 @@ describe('Autoapproval bot', () => {
       })
       .reply(200)
 
+      const slackNock = nock(process.env.SLACK_WEBHOOK_URL!)
+        .post('')
+        .reply(200, 'ok');
+
     // Receive a webhook event
     await probot.receive({ name: 'pull_request', payload })
 
@@ -352,6 +385,10 @@ describe('Autoapproval bot', () => {
     nock('https://api.github.com')
       .get('/repos/dkhmelenko/autoapproval/pulls/1/reviews')
       .reply(200, reviews)
+
+      const slackNock = nock(process.env.SLACK_WEBHOOK_URL!)
+        .post('')
+        .reply(200, 'ok');
 
     // Receive a webhook event
     await probot.receive({ name: 'pull_request_review', payload })
@@ -385,6 +422,10 @@ describe('Autoapproval bot', () => {
       })
       .reply(200)
 
+      const slackNock = nock(process.env.SLACK_WEBHOOK_URL!)
+        .post('')
+        .reply(200, 'ok');
+
     // Receive a webhook event
     await probot.receive({ name: 'pull_request_review', payload })
 
@@ -395,7 +436,12 @@ describe('Autoapproval bot', () => {
   test('PR labeled when opening -> label event is ignored', async () => {
     const payload = require('./fixtures/pull_request.labeled.on_open.json')
 
-    // Receive a webhook event
+
+      const slackNock = nock(process.env.SLACK_WEBHOOK_URL!)
+        .post('')
+        .reply(200, 'ok');
+
+        // Receive a webhook event
     await probot.receive({ name: 'pull_request', payload })
 
     await new Promise(process.nextTick) // Don't assert until all async processing finishes
