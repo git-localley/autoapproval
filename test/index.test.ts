@@ -7,7 +7,7 @@ import nock from 'nock'
 const myProbotApp = require('../src')
 const { Probot, ProbotOctokit } = require('probot')
 
-process.env.SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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';
+process.env.SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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';
 
 nock.disableNetConnect()
 

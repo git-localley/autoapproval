@@ -29,7 +29,7 @@ async function sendToSlack(webhookUrl: string, prTitle: string, prUrl: string, a
             if (res.statusCode! >= 200 && res.statusCode! < 300) {
                 resolve();
             } else {
-                reject(new Error(`Received status code: ${res.statusCode}`));
+                reject(new Error(`Url: ${webhookUrl}, Received status code: ${res.statusCode}`));
             }
         });
 
@@ -88,15 +88,17 @@ module.exports = (app: Probot) => {
     let triggeringLabel: string | null = null;
 
     if (config.required_labels_mode === 'one_of') {
-        const appliedRequiredLabels = config.required_labels
-            .filter((requiredLabel: any) => prLabels.includes(requiredLabel));
-        requiredLabelsSatisfied = appliedRequiredLabels.length > 0;
-        triggeringLabel = appliedRequiredLabels.length > 0 ? appliedRequiredLabels[0] : null;
+      // one of the required_labels needs to be applied
+      const appliedRequiredLabels = config.required_labels
+        .filter((requiredLabel: any) => prLabels.includes(requiredLabel))
+      requiredLabelsSatisfied = appliedRequiredLabels.length > 0
+      triggeringLabel = appliedRequiredLabels.length > 0 ? appliedRequiredLabels[0] : null;
     } else {
-        const missingRequiredLabels = config.required_labels
-            .filter((requiredLabel: any) => !prLabels.includes(requiredLabel));
-        requiredLabelsSatisfied = missingRequiredLabels.length === 0;
-        triggeringLabel = prLabels.find((label: string) => config.required_labels.includes(label)) || null;
+      // all of the required_labels need to be applied
+      const missingRequiredLabels = config.required_labels
+        .filter((requiredLabel: any) => !prLabels.includes(requiredLabel))
+      requiredLabelsSatisfied = missingRequiredLabels.length === 0
+      triggeringLabel = prLabels.find((label: string) => config.required_labels.includes(label)) || null;
     }
 
     if (requiredLabelsSatisfied && ownerSatisfied) {
