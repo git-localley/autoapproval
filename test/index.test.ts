@@ -1,10 +1,13 @@
 // You can import your modules
 // import index from '../src/index'
 
+import exp from 'constants';
 import nock from 'nock'
 // Requiring our app implementation
 const myProbotApp = require('../src')
 const { Probot, ProbotOctokit } = require('probot')
+
+process.env.SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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';
 
 nock.disableNetConnect()
 
@@ -46,6 +49,10 @@ describe('Autoapproval bot', () => {
         return body.event === 'APPROVE'
       })
       .reply(200)
+
+      const slackNock = nock(process.env.SLACK_WEBHOOK_URL!)
+        .post('')
+        .reply(200, 'ok');
 
     // Receive a webhook event
     await probot.receive({ name: 'pull_request', payload })
@@ -185,8 +192,14 @@ describe('Autoapproval bot', () => {
       })
       .reply(200)
 
+      const slackNock = nock(process.env.SLACK_WEBHOOK_URL!)
+        .post('')
+        .reply(200, 'ok');
+
     // Receive a webhook event
     await probot.receive({ name: 'pull_request', payload })
+    
+    expect(slackNock.isDone()).toBeTruthy();
 
     await new Promise(process.nextTick) // Don't assert until all async processing finishes
     expect(nock.isDone()).toBeTruthy()
