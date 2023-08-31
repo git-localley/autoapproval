@@ -1,5 +1,18 @@
 import { Probot, Context } from 'probot'
 import { PullRequestEvent, PullRequestReviewEvent } from '@octokit/webhooks-types'
+import axios from 'axios';
+
+async function sendToSlack(webhookUrl: string, prUrl: string, action: string) {
+  const text = `A pull request has been ${action}: ${prUrl}`;
+
+  try {
+    await axios.post(webhookUrl, {
+      text
+    });
+  } catch (error) {
+    console.error('Error sending message to Slack:', error);
+  }
+}
 
 module.exports = (app: Probot) => {
   app.on(['pull_request.opened', 'pull_request.reopened', 'pull_request.labeled', 'pull_request.edited', 'pull_request_review'], async (context) => {
@@ -66,12 +79,14 @@ module.exports = (app: Probot) => {
           approvePullRequest(context)
           applyLabels(context, config.apply_labels as string[])
           context.log('Review was dismissed, approve again')
+          sendToSlack(process.env.SLACK_WEBHOOK_URL, pr.html_url, 're-approved'); 
         }
       } else {
         await applyAutoMerge(context, prLabels, config.auto_merge_labels, config.auto_rebase_merge_labels, config.auto_squash_merge_labels)
         approvePullRequest(context)
         applyLabels(context, config.apply_labels as string[])
         context.log('PR approved first time')
+        sendToSlack(process.env.SLACK_WEBHOOK_URL, pr.html_url, 'approved'); 
       }
     } else {
       // one of the checks failed
