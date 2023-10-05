@@ -4,6 +4,11 @@ import { request } from 'https';
 import { URL } from 'url';
 
 async function sendToSlack(webhookUrl: string, prTitle: string, prUrl: string, action: string, labelName: string, whoLabeled: string) {
+  if (webhookUrl === undefined) {
+    console.error('webhook_url is not defined');
+    return;
+  }
+
   const text = `A pull request has been ${action}: ${prTitle}
 - ${prUrl}
 - reason: ${labelName}
@@ -66,6 +71,8 @@ module.exports = (app: Probot) => {
     const config: any = await context.config('autoapproval.yml')
     context.log(config, '\n\nLoaded config')
 
+    const webhook_url = config.webhook_url || process.env.SLACK_WEBHOOK_URL;
+
     // determine if the PR has any "blacklisted" labels
     const prLabels: string[] = pr.labels.map((label: any) => label.name)
     let blacklistedLabels: string[] = []
@@ -112,14 +119,14 @@ module.exports = (app: Probot) => {
           approvePullRequest(context)
           applyLabels(context, config.apply_labels as string[])
           context.log('Review was dismissed, approve again')
-          await sendToSlack(process.env.SLACK_WEBHOOK_URL!, pr.title, pr.html_url, 're-approved', triggeringLabel!, whoLabeled);
+          await sendToSlack(webhook_url!, pr.title, pr.html_url, 're-approved', triggeringLabel!, whoLabeled);
         }
       } else {
         await applyAutoMerge(context, prLabels, config.auto_merge_labels, config.auto_rebase_merge_labels, config.auto_squash_merge_labels)
         approvePullRequest(context)
         applyLabels(context, config.apply_labels as string[])
         context.log('PR approved first time')
-        await sendToSlack(process.env.SLACK_WEBHOOK_URL!, pr.title, pr.html_url, 'approved', triggeringLabel!, whoLabeled);
+        await sendToSlack(webhook_url!, pr.title, pr.html_url, 'approved', triggeringLabel!, whoLabeled);
       }
     } else {
       // one of the checks failed

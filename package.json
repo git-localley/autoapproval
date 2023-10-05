@@ -1,6 +1,6 @@
 {
   "name": "autoapproval",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "The bot for approving pull requests automatically",
   "author": "Dmytro Khmelenko <d.khmelenko@gmail.com> (dkhmelenko.github.io)",
   "license": "ISC",

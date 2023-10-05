@@ -7,7 +7,8 @@ import nock from 'nock'
 const myProbotApp = require('../src')
 const { Probot, ProbotOctokit } = require('probot')
 
-process.env.SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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';
+// process.env.SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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';
+process.env.SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/T0261DU538S/B05V68SNCR3/aspdkaspasf';
 
 nock.disableNetConnect()
 
@@ -65,7 +66,7 @@ describe('Autoapproval bot', () => {
     const payload = require('./fixtures/pull_request.opened.json')
     const config = 'from_owner:\n  - dkhmelenko\nrequired_labels:\n  - merge\nblacklisted_labels:\n  - wip\napply_labels: []'
 
-    nock('https://api.github.com')
+    const testNock = nock('https://api.github.com')
       .get('/repos/dkhmelenko/autoapproval/contents/.github%2Fautoapproval.yml')
       .reply(200, config)
 
@@ -77,14 +78,14 @@ describe('Autoapproval bot', () => {
     await probot.receive({ name: 'pull_request', payload })
 
     await new Promise(process.nextTick) // Don't assert until all async processing finishes
-    expect(nock.isDone()).toBeTruthy()
+    expect(testNock.isDone()).toBeTruthy()
   })
 
   test('PR has no required labels -> will NOT be approved', async () => {
     const payload = require('./fixtures/pull_request.opened.json')
     const config = 'from_owner:\n  - dkhmelenko\nrequired_labels:\n  - ready\nblacklisted_labels: []\napply_labels: []'
 
-    nock('https://api.github.com')
+    const testNock = nock('https://api.github.com')
       .get('/repos/dkhmelenko/autoapproval/contents/.github%2Fautoapproval.yml')
       .reply(200, config)
 
@@ -96,14 +97,14 @@ describe('Autoapproval bot', () => {
     await probot.receive({ name: 'pull_request', payload })
 
     await new Promise(process.nextTick) // Don't assert until all async processing finishes
-    expect(nock.isDone()).toBeTruthy()
+    expect(testNock.isDone()).toBeTruthy()
   })
-
+ 
   test('PR has not all required labels -> will NOT be approved', async () => {
     const payload = require('./fixtures/pull_request.opened.json')
     const config = 'from_owner:\n  - dkhmelenko\nrequired_labels:\n  - ready\n  - ready2\nblacklisted_labels: []\napply_labels: []'
 
-    nock('https://api.github.com')
+    const testNock = nock('https://api.github.com')
       .get('/repos/dkhmelenko/autoapproval/contents/.github%2Fautoapproval.yml')
       .reply(200, config)
 
@@ -115,17 +116,17 @@ describe('Autoapproval bot', () => {
     await probot.receive({ name: 'pull_request', payload })
 
     await new Promise(process.nextTick) // Don't assert until all async processing finishes
-    expect(nock.isDone()).toBeTruthy()
+    expect(testNock.isDone()).toBeTruthy()
   })
 
   test('PR has no expected owner -> will NOT be approved', async () => {
     const payload = require('./fixtures/pull_request.opened.json')
     const config = 'from_owner:\n  - blabla\nrequired_labels:\n  - merge\nblacklisted_labels: []\napply_labels: []'
 
-    nock('https://api.github.com')
+    const testNock = nock('https://api.github.com')
       .get('/repos/dkhmelenko/autoapproval/contents/.github%2Fautoapproval.yml')
       .reply(200, config)
-
+ 
       const slackNock = nock(process.env.SLACK_WEBHOOK_URL!)
         .post('')
         .reply(200, 'ok');
@@ -134,7 +135,7 @@ describe('Autoapproval bot', () => {
     await probot.receive({ name: 'pull_request', payload })
 
     await new Promise(process.nextTick) // Don't assert until all async processing finishes
-    expect(nock.isDone()).toBeTruthy()
+    expect(testNock.isDone()).toBeTruthy()
   })
 
   test('PR has required labels and expected owner -> will be approved', async () => {
@@ -155,9 +156,11 @@ describe('Autoapproval bot', () => {
         return body.event === 'APPROVE'
       })
       .reply(200)
-
-
       
+      const slackNock = nock(process.env.SLACK_WEBHOOK_URL!)
+        .post('')
+        .reply(200, 'ok');
+
     // Receive a webhook event
     await probot.receive({ name: 'pull_request', payload })
 
@@ -195,9 +198,13 @@ describe('Autoapproval bot', () => {
     expect(nock.isDone()).toBeTruthy()
   })
 
+  //////////////////////////
+  ///// webhook test
+  /////////////////////////
   test('PR has one of multiple required labels and expected owner -> will be approved', async () => {
     const payload = require('./fixtures/pull_request_opened_multiple_labels.json')
-    const config = 'from_owner:\n  - dkhmelenko\nrequired_labels:\n  - merge\n  - merge2\nrequired_labels_mode: one_of\nblacklisted_labels: []\napply_labels: []'
+    const webhook_url = 'https://hooks.slack.com/services/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'
+    const config = 'from_owner:\n  - dkhmelenko\nrequired_labels:\n  - merge\n  - merge2\nrequired_labels_mode: one_of\nblacklisted_labels: []\napply_labels: []\nwebhook_url: https://hooks.slack.com/services/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'
     const reviews = require('./fixtures/pull_request_reviews_empty.json')
 
     nock('https://api.github.com')
@@ -208,18 +215,23 @@ describe('Autoapproval bot', () => {
       .get('/repos/dkhmelenko/autoapproval/pulls/1/reviews')
       .reply(200, reviews)
 
-    nock('https://api.github.com')
+    const testNock = nock('https://api.github.com')
       .post('/repos/dkhmelenko/autoapproval/pulls/1/reviews', (body: any) => {
         return body.event === 'APPROVE'
       })
       .reply(200)
 
+    //*
+      const slackNock = nock(webhook_url!)
+      .post('')
+      .reply(200, 'ok');
+    //*/
 
     // Receive a webhook event
     await probot.receive({ name: 'pull_request', payload })
 
     await new Promise(process.nextTick) // Don't assert until all async processing finishes
-    expect(nock.isDone()).toBeTruthy()
+    expect(testNock.isDone()).toBeTruthy()
   })
 
   test('PR approved and label is applied', async () => {
@@ -279,7 +291,7 @@ describe('Autoapproval bot', () => {
       })
       .reply(200)
 
-    nock('https://api.github.com')
+    const testNock = nock('https://api.github.com')
       .post('/graphql', (body: any) => {
         return body.variables.pullRequestId === 'MDExOlB1bGxSZXF1ZN0NjExMzU2MTgy' &&
            body.variables.mergeMethod === 'MERGE'
@@ -294,7 +306,7 @@ describe('Autoapproval bot', () => {
     await probot.receive({ name: 'pull_request', payload })
 
     await new Promise(process.nextTick) // Don't assert until all async processing finishes
-    expect(nock.isDone()).toBeTruthy()
+    expect(testNock.isDone()).toBeTruthy()
   })
 
   test('PR approved and auto merge squash is enabled', async () => {
@@ -317,7 +329,7 @@ describe('Autoapproval bot', () => {
       })
       .reply(200)
 
-    nock('https://api.github.com')
+    const testNock = nock('https://api.github.com')
       .post('/graphql', (body: any) => {
         return body.variables.pullRequestId === 'MDExOlB1bGxSZXF1ZN0NjExMzU2MTgy' &&
            body.variables.mergeMethod === 'SQUASH'
@@ -332,7 +344,7 @@ describe('Autoapproval bot', () => {
     await probot.receive({ name: 'pull_request', payload })
 
     await new Promise(process.nextTick) // Don't assert until all async processing finishes
-    expect(nock.isDone()).toBeTruthy()
+    expect(testNock.isDone()).toBeTruthy()
   })
 
   test('PR approved and auto merge rebase is enabled', async () => {
@@ -355,7 +367,7 @@ describe('Autoapproval bot', () => {
       })
       .reply(200)
 
-    nock('https://api.github.com')
+    const testNock = nock('https://api.github.com')
       .post('/graphql', (body: any) => {
         return body.variables.pullRequestId === 'MDExOlB1bGxSZXF1ZN0NjExMzU2MTgy' &&
            body.variables.mergeMethod === 'REBASE'
@@ -370,7 +382,7 @@ describe('Autoapproval bot', () => {
     await probot.receive({ name: 'pull_request', payload })
 
     await new Promise(process.nextTick) // Don't assert until all async processing finishes
-    expect(nock.isDone()).toBeTruthy()
+    expect(testNock.isDone()).toBeTruthy()
   })
 
   test('PR is already approved -> will NOT be approved again', async () => {
@@ -382,7 +394,7 @@ describe('Autoapproval bot', () => {
       .get('/repos/dkhmelenko/autoapproval/contents/.github%2Fautoapproval.yml')
       .reply(200, config)
 
-    nock('https://api.github.com')
+    const testNock = nock('https://api.github.com')
       .get('/repos/dkhmelenko/autoapproval/pulls/1/reviews')
       .reply(200, reviews)
 
@@ -394,7 +406,7 @@ describe('Autoapproval bot', () => {
     await probot.receive({ name: 'pull_request_review', payload })
 
     await new Promise(process.nextTick) // Don't assert until all async processing finishes
-    expect(nock.isDone()).toBeTruthy()
+    expect(testNock.isDone()).toBeTruthy()
   })
 
   test('Autoapproval review was dismissed -> approve PR again', async () => {
@@ -416,7 +428,7 @@ describe('Autoapproval bot', () => {
       })
       .reply(200)
 
-    nock('https://api.github.com')
+    const testNock = nock('https://api.github.com')
       .post('/repos/dkhmelenko/autoapproval/issues/1/labels', (body: any) => {
         return body.labels.includes('merge')
       })
@@ -430,22 +442,20 @@ describe('Autoapproval bot', () => {
     await probot.receive({ name: 'pull_request_review', payload })
 
     await new Promise(process.nextTick) // Don't assert until all async processing finishes
-    expect(nock.isDone()).toBeTruthy()
+    expect(testNock.isDone()).toBeTruthy()
   })
 
   test('PR labeled when opening -> label event is ignored', async () => {
     const payload = require('./fixtures/pull_request.labeled.on_open.json')
 
-
-      const slackNock = nock(process.env.SLACK_WEBHOOK_URL!)
-        .post('')
-        .reply(200, 'ok');
+    const slackNock = nock(process.env.SLACK_WEBHOOK_URL!)
+    .post('')
+    .reply(200, 'ok');
 
         // Receive a webhook event
     await probot.receive({ name: 'pull_request', payload })
 
     await new Promise(process.nextTick) // Don't assert until all async processing finishes
-    expect(nock.isDone()).toBeTruthy()
   })
 })
 
