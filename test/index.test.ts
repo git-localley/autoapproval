@@ -6,7 +6,7 @@ import nock from 'nock'
 // Requiring our app implementation
 const myProbotApp = require('../src')
 const { Probot, ProbotOctokit } = require('probot')
-const SLACK_URL_TEST_ANYTHING = 'https://hooks.slack.com/services/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';
+const SLACK_URL_TEST_ANYTHING = 'https://hooks.slack.com/services/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';
 
 // process.env.SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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';
 process.env.SLACK_WEBHOOK_URL = SLACK_URL_TEST_ANYTHING;

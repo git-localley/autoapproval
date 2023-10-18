@@ -9,9 +9,10 @@ async function sendToSlack(webhookUrl: string, prTitle: string, prUrl: string, a
     return;
   }
 
-  const text = `A pull request has been ${action}: ${prTitle}
-- ${prUrl}
-- reason: ${labelName}
+  const text = `\`${prTitle}\`
+- A pull request has been ${action}
+  - ${prUrl}
+  - reason: \`${labelName}\`
 - ${whoLabeled}: Please provide the reason why in this thread`;
 
     const url = new URL(webhookUrl);
