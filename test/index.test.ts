@@ -6,9 +6,11 @@ import nock from 'nock'
 // Requiring our app implementation
 const myProbotApp = require('../src')
 const { Probot, ProbotOctokit } = require('probot')
+const SLACK_URL_TEST_ANYTHING = 'https://hooks.slack.com/services/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';
 
 // process.env.SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/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';
-process.env.SLACK_WEBHOOK_URL = 'https://hooks.slack.com/services/T0261DU538S/B05V68SNCR3/aspdkaspasf';
+process.env.SLACK_WEBHOOK_URL = SLACK_URL_TEST_ANYTHING;
+
 
 nock.disableNetConnect()
 
@@ -203,8 +205,20 @@ describe('Autoapproval bot', () => {
   /////////////////////////
   test('PR has one of multiple required labels and expected owner -> will be approved', async () => {
     const payload = require('./fixtures/pull_request_opened_multiple_labels.json')
-    const webhook_url = 'https://hooks.slack.com/services/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'
-    const config = 'from_owner:\n  - dkhmelenko\nrequired_labels:\n  - merge\n  - merge2\nrequired_labels_mode: one_of\nblacklisted_labels: []\napply_labels: []\nwebhook_url: https://hooks.slack.com/services/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'
+    const webhook_url = SLACK_URL_TEST_ANYTHING
+    const config = `
+from_owner:
+  - dkhmelenko\nrequired_labels:
+  - merge
+  - merge2
+required_labels_mode: one_of
+blacklisted_labels: []
+apply_labels: []
+webhook_url: ${SLACK_URL_TEST_ANYTHING}
+slack_user_mapping:
+  icedac: "U03BPTX6CNB"
+  dkhmelenko: "U03BPTX6CNB"
+`;
     const reviews = require('./fixtures/pull_request_reviews_empty.json')
 
     nock('https://api.github.com')
@@ -221,7 +235,7 @@ describe('Autoapproval bot', () => {
       })
       .reply(200)
 
-    //*
+    /*
       const slackNock = nock(webhook_url!)
       .post('')
       .reply(200, 'ok');

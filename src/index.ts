@@ -71,8 +71,6 @@ module.exports = (app: Probot) => {
     const config: any = await context.config('autoapproval.yml')
     context.log(config, '\n\nLoaded config')
 
-    const webhook_url = config.webhook_url || process.env.SLACK_WEBHOOK_URL;
-
     // determine if the PR has any "blacklisted" labels
     const prLabels: string[] = pr.labels.map((label: any) => label.name)
     let blacklistedLabels: string[] = []
@@ -86,6 +84,9 @@ module.exports = (app: Probot) => {
         return
       }
     }
+
+    // config.webhook_url can be undeifned if the user didn't set it in the config file
+    const webhook_url = config.webhook_url || process.env.SLACK_WEBHOOK_URL;
 
     // reading pull request owner info and check it with configuration
     const ownerSatisfied = config.from_owner.length === 0 || config.from_owner.includes(pr.user.login)
@@ -110,8 +111,19 @@ module.exports = (app: Probot) => {
 
     if (requiredLabelsSatisfied && ownerSatisfied) {
       const reviews = await getAutoapprovalReviews(context)
-      const whoLabeled = context.payload.sender?.login || 'unknown'; // the person who triggered the event or 'unknown' as a fallback
+      const whoLabeled = context.payload.sender?.login || 'icedac'; // the person who triggered the event or 'unknown' as a fallback
 
+      let slackUserId = null;
+
+      // Check if slack_user_mapping exists in the configuration before accessing it
+      if (config.slack_user_mapping) {
+        slackUserId = config.slack_user_mapping[whoLabeled] || null;
+      }
+      // Check if a Slack user ID exists in the user mapping. If not, provide a fallback message.
+      const mention = slackUserId ? `<@${slackUserId}>` : `\`PLEASE UPDATE USER MAPPING in autoapproval.yml\`: GITHUB_ID is \`${whoLabeled}\``;
+      // Check if the event was triggered by a bot
+      const isBot = whoLabeled.endsWith('[bot]');
+ 
       if (reviews.length > 0) {
         context.log('PR has already reviews')
         if (context.payload.action === 'dismissed') {
@@ -119,14 +131,14 @@ module.exports = (app: Probot) => {
           approvePullRequest(context)
           applyLabels(context, config.apply_labels as string[])
           context.log('Review was dismissed, approve again')
-          await sendToSlack(webhook_url!, pr.title, pr.html_url, 're-approved', triggeringLabel!, whoLabeled);
+          if (!isBot) await sendToSlack(webhook_url!, pr.title, pr.html_url, 're-approved', triggeringLabel!, mention);
         }
       } else {
         await applyAutoMerge(context, prLabels, config.auto_merge_labels, config.auto_rebase_merge_labels, config.auto_squash_merge_labels)
         approvePullRequest(context)
         applyLabels(context, config.apply_labels as string[])
         context.log('PR approved first time')
-        await sendToSlack(webhook_url!, pr.title, pr.html_url, 'approved', triggeringLabel!, whoLabeled);
+        if (!isBot) await sendToSlack(webhook_url!, pr.title, pr.html_url, 're-approved', triggeringLabel!, mention);
       }
     } else {
       // one of the checks failed

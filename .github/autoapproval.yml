@@ -13,3 +13,7 @@ apply_labels:
   - merge
 
 webhook_url: https://hooks.slack.com/services/XXXXXXXXX/XXXXXXXXX/XXXXXXXXXXXXXXXXXXXXXXXX
+
+slack_user_mapping:
+  githubUsername1: "slackUserID1"
+  githubUsername2: "slackUserID2"
